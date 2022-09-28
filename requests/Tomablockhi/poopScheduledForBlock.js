@@ -26,7 +26,7 @@ const contract = new ethers.Contract(contractAddress, abi, provider);
 const request = async () => {
   const args = process.argv.slice(2);
   console.log(`Making a call to contract at address: ${contractAddress}`);
-  const data = await contract.poopScheduledForBlock(args[0]);
+  const data = await contract.poopScheduledForBlocks(args[0]);
   console.log(`The name of this collection is: ${data}`);
 };
 
@@ -48,7 +48,7 @@ request();
 // setURI: [Function (anonymous)],
 // starvationBlockOf: [Function (anonymous)],
 // dehydrationBlockOf: [Function (anonymous)],
-// poopScheduledForBlock: [Function (anonymous)],
+// poopScheduledForBlocks: [Function (anonymous)],
 // cropScheduledForBlock: [Function (anonymous)],
 // hatch: [Function (anonymous)],
 // feed: [Function (anonymous)],

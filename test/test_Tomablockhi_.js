@@ -34,7 +34,7 @@ const debugLogState = async (contract, tamoId) => {
     console.log("Starves after: " + starvationBlock.toNumber())
     const dehydrationBlock = await contract.dehydrationBlockOf(tamoId)
     console.log("Dehydrates after: " + dehydrationBlock.toNumber())
-    const poopBlock = await contract.poopScheduledForBlock(tamoId)
+    const poopBlock = await contract.poopScheduledForBlocks(tamoId)
     console.log("Infected after: " + (poopBlock[0].toNumber() + 19185))
 }
 
@@ -194,7 +194,6 @@ contract('Tamoblockhi', accounts => {
         }
     });
 
-
     it("Hatched Toma dies of infection", async () => {
         const expectedTamoId = 11
         await contract.hatch(
@@ -279,7 +278,7 @@ contract('Tamoblockhi', accounts => {
         );
 
         let block = await web3.eth.getBlock("latest")
-        const poopBlocks = await contract.poopScheduledForBlock(expectedTamoId)
+        const poopBlocks = await contract.poopScheduledForBlocks(expectedTamoId)
         assert.equal(
             poopBlocks[0].toNumber(),
             6395 + block.number,
@@ -297,6 +296,24 @@ contract('Tamoblockhi', accounts => {
             0,
             "Poop schedule was not correct for initial hatch"
         );
+    });
+
+    it("clean can not remove poop earlier than block", async () => {
+        const expectedTamoId = 11
+        await contract.hatch(
+            accounts[0],
+            []
+        );
+
+        try {
+            await contract.clean(
+                accounts[0],
+                expectedTamoId
+            );
+            assert(false, "This should not run. Expected error")
+        } catch(e) {
+            assert.equal(e.data.reason, "5", "Expected Error")
+        }
     });
 
     it("uAdjustedAmount returns correct amounts", async () => {
@@ -494,7 +511,7 @@ contract('Tamoblockhi', accounts => {
             feedAmount
         );
 
-        const poopBlocks = await contract.poopScheduledForBlock(expectedTamoId)
+        const poopBlocks = await contract.poopScheduledForBlocks(expectedTamoId)
         assert.equal(
             poopBlocks[0].toNumber(), 
             6395 + blockNumber,
@@ -541,7 +558,7 @@ contract('Tamoblockhi', accounts => {
             1
         );
 
-        const poopBlocks = await contract.poopScheduledForBlock(expectedTamoId)
+        const poopBlocks = await contract.poopScheduledForBlocks(expectedTamoId)
         assert.equal(
             poopBlocks[0].toNumber(), 
             6395 + blockNumber,
@@ -566,7 +583,7 @@ contract('Tamoblockhi', accounts => {
             expectedTamoId
         )
 
-        const newPoopBlocks = await contract.poopScheduledForBlock(expectedTamoId)
+        const newPoopBlocks = await contract.poopScheduledForBlocks(expectedTamoId)
         assert.equal(
             newPoopBlocks[0].toNumber(), 
             6396 + blockNumber,
@@ -591,7 +608,7 @@ contract('Tamoblockhi', accounts => {
             expectedTamoId
         )
 
-        const secondsNewPoopBlocks = await contract.poopScheduledForBlock(expectedTamoId)
+        const secondsNewPoopBlocks = await contract.poopScheduledForBlocks(expectedTamoId)
         assert.equal(
             secondsNewPoopBlocks[0].toNumber(), 
             6398 + blockNumber,
@@ -616,7 +633,7 @@ contract('Tamoblockhi', accounts => {
             expectedTamoId
         )
 
-        const thirdNewPoopBlocks = await contract.poopScheduledForBlock(expectedTamoId)
+        const thirdNewPoopBlocks = await contract.poopScheduledForBlocks(expectedTamoId)
         assert.equal(
             thirdNewPoopBlocks[0].toNumber(), 
             0,

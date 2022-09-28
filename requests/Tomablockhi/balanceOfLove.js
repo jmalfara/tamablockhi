@@ -48,7 +48,7 @@ request();
 // setURI: [Function (anonymous)],
 // starvationBlockOf: [Function (anonymous)],
 // dehydrationBlockOf: [Function (anonymous)],
-// poopScheduledForBlock: [Function (anonymous)],
+// poopScheduledForBlocks: [Function (anonymous)],
 // cropScheduledForBlock: [Function (anonymous)],
 // hatch: [Function (anonymous)],
 // feed: [Function (anonymous)],

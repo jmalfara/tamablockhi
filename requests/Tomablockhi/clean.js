@@ -32,7 +32,9 @@ const request = async () => {
   const args = process.argv.slice(2);
   console.log(`Making a call to contract at address: ${contractAddress}`);
   const data = await contract.clean(args[0], args[1]);
-  console.log(`Transaction Sent: ${data.hash}`)
+  console.log(`Transaction Sent but waiting: ${data.hash}`)
+  const reciept = await data.wait()
+  console.log(JSON.stringify(reciept))
 };
 
 request();

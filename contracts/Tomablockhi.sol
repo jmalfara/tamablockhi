@@ -71,7 +71,7 @@ contract Tamoblockhi is ERC1155, Ownable, ERC1155Supply {
         return states[tokenId].dehydrationBlock;
     }
 
-    function poopScheduledForBlock(uint256 tokenId) public view returns(uint256[] memory) {
+    function poopScheduledForBlocks(uint256 tokenId) public view returns(uint256[] memory) {
         require(tokenId >= TAMO_MIN_TOKEN_ID, ERROR_NOT_TAMO);
         return peekFirst(states[tokenId].poopQueue, 3);
     }
@@ -114,7 +114,7 @@ contract Tamoblockhi is ERC1155, Ownable, ERC1155Supply {
 
         states[tokenId].starvationBlock += adjustedFoodAmount;
         enqueue(states[tokenId].poopQueue, block.number + poopAfterBlocks);
-        _burn(account, FOOD_TOKEN_ID, adjustedFoodAmount); // Spend the food
+        _burn(account, FOOD_TOKEN_ID, foodAmount); // Spend the food
     }
 
     function water(
@@ -133,14 +133,15 @@ contract Tamoblockhi is ERC1155, Ownable, ERC1155Supply {
         );
 
         states[tokenId].dehydrationBlock += adjustedWaterAmount;
-        _burn(account, WATER_TOKEN_ID, adjustedWaterAmount);
+        _burn(account, WATER_TOKEN_ID, waterAmount);
     }
 
     function clean(
         address account,
         uint256 tokenId
     ) public onlyAlive(tokenId) {
-        // uint256 poopBlock = peekFirst(states[tokenId].poopQueue, 1)[0];
+        uint256 poopBlock = peekFirst(states[tokenId].poopQueue, 1)[0];
+        require(poopBlock < block.number, ERROR_INSUFFIENT_POOP);
         dequeue(states[tokenId].poopQueue);
         _mint(account, POOP_TOKEN_ID, 1, "");
     }
