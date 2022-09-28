@@ -1,6 +1,6 @@
 const { privateKeyDev } = require('../../config')
 const { network: networkConfig } = require('../config')
-const { abi, networks } = require('../../build/contracts/Ligma.json')
+const { abi, networks } = require('../../build/contracts/Tamoblockhi.json')
 
 const network = networks[networkConfig.chainId]
 const ethers = require('ethers');
@@ -31,8 +31,8 @@ const contract = new ethers.Contract(contractAddress, abi, wallet);
 const request = async () => {
   const args = process.argv.slice(2);
   console.log(`Making a call to contract at address: ${contractAddress}`);
-  const data = await contract.tokenByIndex(parseInt(args[0]));
-  console.log(data)
+  const data = await contract.hatch(args[0], []);
+  console.log(`Transaction Sent: ${data.hash}`)
 };
 
 request();

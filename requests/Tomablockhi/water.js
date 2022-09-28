@@ -1,3 +1,4 @@
+const { privateKeyDev } = require('../../config')
 const { network: networkConfig } = require('../config')
 const { abi, networks } = require('../../build/contracts/Tamoblockhi.json')
 
@@ -16,21 +17,22 @@ const provider = new ethers.providers.StaticJsonRpcProvider(
   }
 );
 
+// 4. Create wallet
+let wallet = new ethers.Wallet(privateKeyDev, provider);
+
+
 // 3. Contract address variable
 const contractAddress = network.address;
 
 // 4. Create contract instance
-const migrations = new ethers.Contract(contractAddress, abi, provider);
+const contract = new ethers.Contract(contractAddress, abi, wallet);
 
 // 5. Create get function
-const get = async () => {
+const request = async () => {
+  const args = process.argv.slice(2);
   console.log(`Making a call to contract at address: ${contractAddress}`);
-
-  // 6. Call contract 
-  const data = await migrations.owner();
-
-  console.log(`The owner of this contract is: ${data}`);
+  const data = await contract.water(args[0], args[1], 1);
+  console.log(`Transaction Sent: ${data.hash}`)
 };
 
-// 7. Call get function
-get();
+request();

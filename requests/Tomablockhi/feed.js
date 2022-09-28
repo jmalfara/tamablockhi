@@ -1,6 +1,6 @@
 const { privateKeyDev } = require('../../config')
 const { network: networkConfig } = require('../config')
-const { abi, networks } = require('../../build/contracts/Ligma.json')
+const { abi, networks } = require('../../build/contracts/Tamoblockhi.json')
 
 const network = networks[networkConfig.chainId]
 const ethers = require('ethers');
@@ -29,9 +29,10 @@ const contract = new ethers.Contract(contractAddress, abi, wallet);
 
 // 5. Create get function
 const request = async () => {
+  const args = process.argv.slice(2);
   console.log(`Making a call to contract at address: ${contractAddress}`);
-  const data = await contract.totalSupply();
-  console.log(`Total Supply: ${data}`)
+  const data = await contract.feed(args[0], args[1], 1);
+  console.log(`Transaction Sent: ${data.hash}`)
 };
 
 request();

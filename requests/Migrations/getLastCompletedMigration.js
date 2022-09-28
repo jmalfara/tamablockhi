@@ -1,5 +1,5 @@
 const { network: networkConfig } = require('../config')
-const { abi, networks } = require('../../build/contracts/Ligma.json')
+const { abi, networks } = require('../../build/contracts/Tamoblockhi.json')
 
 const network = networks[networkConfig.chainId]
 const ethers = require('ethers');

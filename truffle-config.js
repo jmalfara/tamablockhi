@@ -8,6 +8,7 @@ if (!privateKeyDev.trim()) {
 }
 
 const rpcDev = 'http://localhost:9933/'
+const rpcMoonbaseAlpha = 'https://rpc.api.moonbase.moonbeam.network'
 const rpcMoonbase = 'https://rpc.api.moonbase.moonbeam.network'
 
 module.exports = {
@@ -24,6 +25,16 @@ module.exports = {
          network_id: 1281,
       },
       // Moonbase Alpha TestNet
+      alpha: {
+         rpc: rpcMoonbaseAlpha,
+         provider: () => {
+            return new HDWalletProvider(
+               privateKeyDev,
+               rpcMoonbaseAlpha
+            );
+         },
+         network_id: 1287,
+      },
       moonbase: {
          rpc: rpcMoonbase,
          provider: () => {
