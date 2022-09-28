@@ -18,6 +18,7 @@ contract Tamoblockhi is ERC1155, Ownable, ERC1155Supply {
     string private ERROR_DIED_STARVATION = "10";
     string private ERROR_DIED_DEHYDRATION = "11";
     string private ERROR_DIED_INFECTION = "12";
+    string private ERROR_NOT_READY = "13";
 
     uint8 private FOOD_TOKEN_ID = 0;
     uint8 private POOP_TOKEN_ID = 1; 
@@ -31,16 +32,25 @@ contract Tamoblockhi is ERC1155, Ownable, ERC1155Supply {
     uint32 private maxBlocksBeforeStarvation = 19185; // ~3 days
     uint32 private maxBlocksBeforeDehydration = 19185; // ~3 days
     uint32 private maxBlocksPoopInfection = 19185; // ~3 days
-    uint32 private poopAfterBlocks = 6395; // ~1 day
-    uint32 private cropReadyAfterBlocks = 6395; // ~1 day
 
+    // States for the tomas by ID
     mapping(uint256 => State) private states;
+
+    // Maps the tamos to accounts for on chain lookup.
+    mapping(address => Queue) private tamoQueues;
 
     struct State { 
         uint256 starvationBlock;
         uint256 dehydrationBlock;
         Queue poopQueue;
         Queue cropQueue;
+    }
+
+    struct PublicState { 
+        uint256 starvationBlock;
+        uint256 dehydrationBlock;
+        uint256[] poopQueue;
+        uint256[] cropQueue;
     }
 
     constructor() ERC1155("") {
@@ -61,24 +71,21 @@ contract Tamoblockhi is ERC1155, Ownable, ERC1155Supply {
         super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
     }
 
-    function starvationBlockOf(uint256 tokenId) public view returns(uint256) {
+    function getPublicState(uint256 tokenId) public view returns(PublicState memory) {
         require(tokenId >= TAMO_MIN_TOKEN_ID, ERROR_NOT_TAMO);
-        return states[tokenId].starvationBlock;
+        PublicState memory publicState;
+        publicState.dehydrationBlock = states[tamoCurrentId].dehydrationBlock;
+        publicState.starvationBlock = states[tamoCurrentId].starvationBlock;
+        publicState.poopQueue = peekFirst(states[tamoCurrentId].poopQueue, states[tamoCurrentId].poopQueue.last - states[tamoCurrentId].poopQueue.first);
+        publicState.cropQueue = peekFirst(states[tamoCurrentId].cropQueue, states[tamoCurrentId].cropQueue.last - states[tamoCurrentId].cropQueue.first);
+        return publicState;
     }
 
-    function dehydrationBlockOf(uint256 tokenId) public view returns(uint256) {
-        require(tokenId >= TAMO_MIN_TOKEN_ID, ERROR_NOT_TAMO);
-        return states[tokenId].dehydrationBlock;
-    }
-
-    function poopScheduledForBlocks(uint256 tokenId) public view returns(uint256[] memory) {
-        require(tokenId >= TAMO_MIN_TOKEN_ID, ERROR_NOT_TAMO);
-        return peekFirst(states[tokenId].poopQueue, 3);
-    }
-
-    function cropScheduledForBlock(uint256 tokenId) public view returns(uint256[] memory) {
-        require(tokenId >= TAMO_MIN_TOKEN_ID, ERROR_NOT_TAMO);
-        return peekFirst(states[tokenId].cropQueue, 3);
+    function getTomablockhis(address account) public view returns(uint256[] memory) {
+        return peekFirst(
+            tamoQueues[account], 
+            tamoQueues[account].last - tamoQueues[account].first
+        );
     }
 
     function hatch(
@@ -92,7 +99,8 @@ contract Tamoblockhi is ERC1155, Ownable, ERC1155Supply {
 
         states[tamoCurrentId].starvationBlock = block.number + 6395;
         states[tamoCurrentId].dehydrationBlock = block.number + 6395;
-        enqueue(states[tamoCurrentId].poopQueue, block.number + poopAfterBlocks);
+        enqueue(states[tamoCurrentId].poopQueue, block.number + 6395);
+        enqueue(tamoQueues[account], tamoCurrentId);
 
         _burn(account, EGG_TOKEN_ID, 1); // Spend the egg
     }
@@ -113,7 +121,7 @@ contract Tamoblockhi is ERC1155, Ownable, ERC1155Supply {
         );
 
         states[tokenId].starvationBlock += adjustedFoodAmount;
-        enqueue(states[tokenId].poopQueue, block.number + poopAfterBlocks);
+        enqueue(states[tokenId].poopQueue, block.number + 6395);
         _burn(account, FOOD_TOKEN_ID, foodAmount); // Spend the food
     }
 
@@ -157,7 +165,7 @@ contract Tamoblockhi is ERC1155, Ownable, ERC1155Supply {
         address account,
         uint256 tokenId
     ) public onlyAlive(tokenId) {
-        require(account == _msgSender(), "11");
+        require(account == _msgSender(), ERROR_NOT_OWNED);
         require(balanceOf(account, FOOD_TOKEN_ID) >= 1, ERROR_INSUFFIENT_FOOD);
         require(balanceOf(account, WATER_TOKEN_ID) >= 1, ERROR_INSUFFIENT_WATER);
         require(balanceOf(account, POOP_TOKEN_ID) >= 3, ERROR_INSUFFIENT_POOP);
@@ -167,7 +175,7 @@ contract Tamoblockhi is ERC1155, Ownable, ERC1155Supply {
         _burn(account, WATER_TOKEN_ID, 1);
         _burn(account, POOP_TOKEN_ID, 3);
 
-        enqueue(states[tokenId].cropQueue, cropReadyAfterBlocks);
+        enqueue(states[tokenId].cropQueue, 6395); //Ready after 6395
     }
 
     function harvestFood(
@@ -176,7 +184,7 @@ contract Tamoblockhi is ERC1155, Ownable, ERC1155Supply {
     ) public onlyAlive(tokenId) {
         require(account == _msgSender(), ERROR_NOT_OWNED);
         uint256 cropBlock = peekFirst(states[tokenId].poopQueue, 1)[0];
-        require(block.number > cropBlock, "Not ready yet");
+        require(block.number > cropBlock, ERROR_NOT_READY);
         dequeue(states[tokenId].cropQueue);
         _mint(account, WATER_TOKEN_ID, 5, "");
         _mint(account, FOOD_TOKEN_ID, 5, "");

@@ -30,12 +30,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const debugLogState = async (contract, tamoId) => {
     let { number: blockNumber } = await web3.eth.getBlock("latest")
     console.log("Current Block: " + blockNumber)
-    const starvationBlock = await contract.starvationBlockOf(tamoId)
-    console.log("Starves after: " + starvationBlock.toNumber())
-    const dehydrationBlock = await contract.dehydrationBlockOf(tamoId)
-    console.log("Dehydrates after: " + dehydrationBlock.toNumber())
-    const poopBlock = await contract.poopScheduledForBlocks(tamoId)
-    console.log("Infected after: " + (poopBlock[0].toNumber() + 19185))
+    const state = await contract.getPublicState(tamoId);
+    console.log("Starves after: " + state.starvationBlock)
+    console.log("Dehydrates after: " + state.dehydrationBlock)
+    console.log("Infected after: " + (parseInt(state.poopQueue[0]) + 19185))
 }
 
 contract('Tamoblockhi', accounts => {
@@ -73,6 +71,43 @@ contract('Tamoblockhi', accounts => {
             tamoBalance,
             1, 
             `Unexpected tamo amount`
+        );
+    });
+
+    it("Tamos are stored in the account list", async () => {
+        await contract.hatch(
+            accounts[0],
+            []
+        );
+
+        await contract.hatch(
+            accounts[0],
+            []
+        );
+
+        await contract.hatch(
+            accounts[0],
+            []
+        );
+
+        const tokens = await contract.getTomablockhis(accounts[0]);
+
+        assert.equal(
+            tokens[0].toNumber(),
+            11, 
+            `Unexpected tamo`
+        );
+
+        assert.equal(
+            tokens[1].toNumber(),
+            12, 
+            `Unexpected tamo`
+        );
+
+        assert.equal(
+            tokens[2].toNumber(),
+            13, 
+            `Unexpected tamo`
         );
     });
 
@@ -278,22 +313,16 @@ contract('Tamoblockhi', accounts => {
         );
 
         let block = await web3.eth.getBlock("latest")
-        const poopBlocks = await contract.poopScheduledForBlocks(expectedTamoId)
+        const state = await contract.getPublicState(expectedTamoId)
         assert.equal(
-            poopBlocks[0].toNumber(),
+            parseInt(state.poopQueue[0]),
             6395 + block.number,
             "Poop schedule was not correct for initial hatch"
         );
 
         assert.equal(
-            poopBlocks[1].toNumber(),
-            0,
-            "Poop schedule was not correct for initial hatch"
-        );
-
-        assert.equal(
-            poopBlocks[2].toNumber(),
-            0,
+            state.poopQueue.length,
+            1,
             "Poop schedule was not correct for initial hatch"
         );
     });
@@ -424,9 +453,9 @@ contract('Tamoblockhi', accounts => {
         let block = await web3.eth.getBlock("latest")
 
         const maxBlocksBeforeStarvation = 19185
-        const starvationBlock = await contract.starvationBlockOf(expectedTamoId)
+        const state = await contract.getPublicState(expectedTamoId)
         assert.equal(
-            starvationBlock,
+            state.starvationBlock,
             maxBlocksBeforeStarvation + block.number,
             "Starvation block was not capped to max"
         );
@@ -440,9 +469,9 @@ contract('Tamoblockhi', accounts => {
         );
 
         let block = await web3.eth.getBlock("latest")
-        const starvationBlock = await contract.starvationBlockOf(expectedTamoId)
+        const state = await contract.getPublicState(expectedTamoId)
         assert.equal(
-            (starvationBlock - block.number), 
+            (state.starvationBlock - block.number), 
             6395, 
             "Original starvation block isn't expected"
         )
@@ -454,9 +483,9 @@ contract('Tamoblockhi', accounts => {
         );
 
         let newBlock = await web3.eth.getBlock("latest")
-        const newStarvationBlock = await contract.starvationBlockOf(expectedTamoId)
+        const newState = await contract.getPublicState(expectedTamoId)
         assert.equal(
-            (newStarvationBlock - newBlock.number), 
+            (newState.starvationBlock - newBlock.number), 
             19184, 
             "New starvation block does not add up"
         )
@@ -471,9 +500,9 @@ contract('Tamoblockhi', accounts => {
 
         let { number: blockNumber } = await web3.eth.getBlock("latest")
 
-        const dehydrationBlock = await contract.dehydrationBlockOf(expectedTamoId)
+        const state = await contract.getPublicState(expectedTamoId)
         assert.equal(
-            dehydrationBlock,
+            state.dehydrationBlock,
             blockNumber + 6395, 
             `Unexpected dehydration block`
         );
@@ -488,9 +517,10 @@ contract('Tamoblockhi', accounts => {
             waterAmount
         );
 
+        const newState = await contract.getPublicState(expectedTamoId)
         assert.equal(
-            await contract.dehydrationBlockOf(expectedTamoId),
-            dehydrationBlock.toNumber() + (waterAmount * 6395), 
+            newState.dehydrationBlock,
+            parseInt(state.dehydrationBlock) + (waterAmount * 6395), 
             `Unexpected tamo amount`
         );
     });
@@ -511,23 +541,23 @@ contract('Tamoblockhi', accounts => {
             feedAmount
         );
 
-        const poopBlocks = await contract.poopScheduledForBlocks(expectedTamoId)
+        const state = await contract.getPublicState(expectedTamoId)
         assert.equal(
-            poopBlocks[0].toNumber(), 
+            parseInt(state.poopQueue[0]), 
             6395 + blockNumber,
             `Unexpected poop block number`
         );
 
         assert.equal(
-            poopBlocks[1].toNumber(), 
+            parseInt(state.poopQueue[1]), 
             6396 + blockNumber,
             `Unexpected poop block number`
         );
 
         assert.equal(
-            poopBlocks[2].toNumber(), 
-            0,
-            `Unexpected poop block number. Expected zero`
+            state.poopQueue.length, 
+            2,
+            `Unexpected size. Expected 2`
         );
     });
 
@@ -558,23 +588,29 @@ contract('Tamoblockhi', accounts => {
             1
         );
 
-        const poopBlocks = await contract.poopScheduledForBlocks(expectedTamoId)
+        const state = await contract.getPublicState(expectedTamoId)
         assert.equal(
-            poopBlocks[0].toNumber(), 
+            parseInt(state.poopQueue[0]), 
             6395 + blockNumber,
             `Unexpected poop block number`
         );
 
         assert.equal(
-            poopBlocks[1].toNumber(), 
+            parseInt(state.poopQueue[1]),
             6396 + blockNumber,
             `Unexpected poop block number`
         );
 
         assert.equal(
-            poopBlocks[2].toNumber(), 
+            parseInt(state.poopQueue[2]),
             6398 + blockNumber,
             `Unexpected poop block number`
+        );
+
+        assert.equal(
+            state.poopQueue.length,
+            3,
+            `Unexpected size. Expected 3`
         );
 
         await mineMany(6396)
@@ -583,23 +619,23 @@ contract('Tamoblockhi', accounts => {
             expectedTamoId
         )
 
-        const newPoopBlocks = await contract.poopScheduledForBlocks(expectedTamoId)
+        const newState = await contract.getPublicState(expectedTamoId)
         assert.equal(
-            newPoopBlocks[0].toNumber(), 
+            parseInt(newState.poopQueue[0]), 
             6396 + blockNumber,
             `Unexpected poop block number`
         );
 
         assert.equal(
-            newPoopBlocks[1].toNumber(), 
+            parseInt(newState.poopQueue[1]), 
             6398 + blockNumber,
             `Unexpected poop block number`
         );
 
         assert.equal(
-            newPoopBlocks[2].toNumber(),
-            0,
-            `Unexpected poop block number. Expected zero`
+            newState.poopQueue.length,
+            2,
+            `Unexpected size. Expected 2`
         );
 
         await mineMany(2)
@@ -608,23 +644,17 @@ contract('Tamoblockhi', accounts => {
             expectedTamoId
         )
 
-        const secondsNewPoopBlocks = await contract.poopScheduledForBlocks(expectedTamoId)
+        const secondState = await contract.getPublicState(expectedTamoId)
         assert.equal(
-            secondsNewPoopBlocks[0].toNumber(), 
+            parseInt(secondState.poopQueue[0]),
             6398 + blockNumber,
             `Unexpected poop block number`
         );
 
         assert.equal(
-            secondsNewPoopBlocks[1].toNumber(), 
-            0,
-            `Unexpected poop block number`
-        );
-
-        assert.equal(
-            secondsNewPoopBlocks[2].toNumber(),
-            0,
-            `Unexpected poop block number. Expected zero`
+            secondState.poopQueue.length,
+            1,
+            `Unexpected size. Expected 1`
         );
 
         await mineMany(2)
@@ -633,23 +663,11 @@ contract('Tamoblockhi', accounts => {
             expectedTamoId
         )
 
-        const thirdNewPoopBlocks = await contract.poopScheduledForBlocks(expectedTamoId)
+        const thirdState = await contract.getPublicState(expectedTamoId)
         assert.equal(
-            thirdNewPoopBlocks[0].toNumber(), 
+            thirdState.poopQueue.length,
             0,
-            `Unexpected poop block number`
-        );
-
-        assert.equal(
-            thirdNewPoopBlocks[1].toNumber(), 
-            0,
-            `Unexpected poop block number`
-        );
-
-        assert.equal(
-            thirdNewPoopBlocks[2].toNumber(),
-            0,
-            `Unexpected poop block number. Expected zero`
+            `Unexpected size. Expected 0`
         );
 
         const balance = await contract.balanceOf(
