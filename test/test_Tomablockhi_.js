@@ -15,15 +15,28 @@ const mine = (timestamp) => {
     })
   }
 
-const mineMany = async (blocks, timestamp) => {
+const mineMany = async (blocks) => {
     for (i = 0; i < blocks; i++) {
-        await mine(timestamp)
+        await mine(1000)
         await sleep(1)
+        if (i % 1000 == 0) {
+            console.log("Mining many blocks: " + i)
+        }
     }
   }
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+const debugLogState = async (contract, tamoId) => {
+    let { number: blockNumber } = await web3.eth.getBlock("latest")
+    console.log("Current Block: " + blockNumber)
+    const starvationBlock = await contract.starvationBlockOf(tamoId)
+    console.log("Starves after: " + starvationBlock.toNumber())
+    const dehydrationBlock = await contract.dehydrationBlockOf(tamoId)
+    console.log("Dehydrates after: " + dehydrationBlock.toNumber())
+    const poopBlock = await contract.poopScheduledForBlock(tamoId)
+    console.log("Infected after: " + (poopBlock[0].toNumber() + 19185))
+}
 
 contract('Tamoblockhi', accounts => {
     let contract;
@@ -70,8 +83,16 @@ contract('Tamoblockhi', accounts => {
             []
         );
 
-        await mineMany(7000, 1000)
-        
+        await contract.water(
+            accounts[0],
+            expectedTamoId,
+            1
+        );
+
+        await mineMany(7000)
+
+        await debugLogState(contract, expectedTamoId)
+
         try {
             await contract.feed(
                 accounts[0],
@@ -80,7 +101,37 @@ contract('Tamoblockhi', accounts => {
             );
             assert(false, "This should not run. Expected error")
         } catch(e) {
-            assert.equal(e.data.reason, "Tamo has died of starvation", "Expected Error")
+            assert.equal(e.data.reason, "10", "Expected Error")
+        }
+    });
+
+    it("Hatched Toma dies of starvation after blocks and is persisted", async () => {
+        const expectedTamoId = 11
+        await contract.hatch(
+            accounts[0],
+            []
+        );
+
+        await contract.water(
+            accounts[0],
+            expectedTamoId,
+            1
+        );
+
+        console.log("Mining 25589 blocks. This will take some time.")
+        await mineMany(25589)
+
+        await debugLogState(contract, expectedTamoId)
+
+        try {
+            await contract.feed(
+                accounts[0],
+                expectedTamoId,
+                4
+            );
+            assert(false, "This should not run. Expected error")
+        } catch(e) {
+            assert.equal(e.data.reason, "10", "Expected Error")
         }
     });
 
@@ -97,8 +148,10 @@ contract('Tamoblockhi', accounts => {
             1000
         );
 
-        await mineMany(7000, 1000)
-    
+        await mineMany(6394)
+
+        await debugLogState(contract, expectedTamoId)
+
         try {
             await contract.feed(
                 accounts[0],
@@ -107,9 +160,40 @@ contract('Tamoblockhi', accounts => {
             );
             assert(false, "This should not run. Expected error")
         } catch(e) {
-            assert.equal(e.data.reason, "Tamo has died of thirst", "Expected Error")
+            assert.equal(e.data.reason, "11", "Expected Error")
         }
     });
+
+    it("Hatched Toma dies of dehydration after blocks and is persisted", async () => {
+        const expectedTamoId = 11
+        await contract.hatch(
+            accounts[0],
+            []
+        );
+
+        await contract.feed(
+            accounts[0],
+            expectedTamoId,
+            1000
+        );
+
+        console.log("Mining 25589 blocks. This will take some time.")
+        await mineMany(25589)
+
+        await debugLogState(contract, expectedTamoId)
+
+        try {
+            await contract.feed(
+                accounts[0],
+                expectedTamoId,
+                1
+            );
+            assert(false, "This should not run. Expected error")
+        } catch(e) {
+            assert.equal(e.data.reason, "11", "Expected Error")
+        }
+    });
+
 
     it("Hatched Toma dies of infection", async () => {
         const expectedTamoId = 11
@@ -130,7 +214,7 @@ contract('Tamoblockhi', accounts => {
             expectedTamoId,
             1
         );
-        await mineMany(6395, 500)
+        await mineMany(6395)
 
         // Day 2
         await contract.feed(
@@ -144,7 +228,7 @@ contract('Tamoblockhi', accounts => {
             expectedTamoId,
             1
         );
-        await mineMany(6395, 500)
+        await mineMany(6395)
 
         // Day 3
         await contract.feed(
@@ -158,7 +242,7 @@ contract('Tamoblockhi', accounts => {
             expectedTamoId,
             1
         );
-        await mineMany(6395, 500)
+        await mineMany(6395)
 
         await contract.feed(
             accounts[0],
@@ -171,7 +255,9 @@ contract('Tamoblockhi', accounts => {
             expectedTamoId,
             1
         );
-        await mineMany(6395, 500)
+        await mineMany(6395)
+
+        await debugLogState(contract, expectedTamoId)
 
         try {
             await contract.feed(
@@ -181,7 +267,7 @@ contract('Tamoblockhi', accounts => {
             );
             assert(false, "This should not run. Expected error")
         } catch(e) {
-            assert.equal(e.data.reason, "Tamo has died of infection", "Expected Error")
+            assert.equal(e.data.reason, "12", "Expected Error")
         }
     });
 
@@ -376,7 +462,7 @@ contract('Tamoblockhi', accounts => {
         );
         
         // Mine more blocks to allow watering
-        await mineMany(6000, 10000)
+        await mineMany(6000)
 
         const waterAmount = 1;
         await contract.water(
@@ -474,7 +560,7 @@ contract('Tamoblockhi', accounts => {
             `Unexpected poop block number`
         );
 
-        await mineMany(6396, 1000)
+        await mineMany(6396)
         await contract.clean(
             accounts[0],
             expectedTamoId
@@ -499,7 +585,7 @@ contract('Tamoblockhi', accounts => {
             `Unexpected poop block number. Expected zero`
         );
 
-        await mineMany(2, 1000)
+        await mineMany(2)
         await contract.clean(
             accounts[0],
             expectedTamoId
@@ -524,7 +610,7 @@ contract('Tamoblockhi', accounts => {
             `Unexpected poop block number. Expected zero`
         );
 
-        await mineMany(2, 1000)
+        await mineMany(2)
         await contract.clean(
             accounts[0],
             expectedTamoId
@@ -652,7 +738,7 @@ contract('Tamoblockhi', accounts => {
             );
             assert(false, "This should not run. Expected error")
         } catch(e) {
-            assert.equal(e.data.reason, "ERC1155: caller is not token owner nor approved", "Expected Error")
+            assert.equal(e.data.reason, "8", "Expected Error")
         }
     });
 
@@ -671,8 +757,9 @@ contract('Tamoblockhi', accounts => {
             );
             assert(false, "This should not run. Expected error")
         } catch(e) {
-            assert.equal(e.data.reason, "Tamo One and Tamo Two are the same", "Expected Error")
+            assert.equal(e.data.reason, "6", "Expected Error")
         }
     });
 });
+
 
