@@ -5,7 +5,7 @@ import TextField from '@mui/material/TextField';
 import Paper from '@mui/material/Paper';
 
 import { ethers } from 'ethers';
-const { abi, networks } = require('../Tamoblockhi.json')
+const { abi, networks } = require('../Tamablockhi.json')
 
 const rpcMoonbaseAlpha = 'https://rpc.api.moonbase.moonbeam.network'
 const provider = new ethers.providers.StaticJsonRpcProvider(
@@ -59,16 +59,16 @@ const Home = () => {
             egg: eggTokens.toNumber()
         }
 
-        const starvationBlock = await contract.starvationBlockOf(pageState.selectedTamoblockhi);
-        const dehydrationBlock = await contract.dehydrationBlockOf(pageState.selectedTamoblockhi);
-        const poopScheduledForBlockss = await contract.poopScheduledForBlocks(pageState.selectedTamoblockhi)
+        const starvationBlock = await contract.starvationBlockOf(pageState.selectedTamablockhi);
+        const dehydrationBlock = await contract.dehydrationBlockOf(pageState.selectedTamablockhi);
+        const poopScheduledForBlockss = await contract.poopScheduledForBlocks(pageState.selectedTamablockhi)
 
         setPageState( prevState => ({
                 ...prevState,
                 balances: balances,
-                Tamoblockhis: {
-                    [pageState.selectedTamoblockhi]: {
-                        ...prevState.Tamoblockhis[pageState.selectedTamoblockhi],
+                Tamablockhis: {
+                    [pageState.selectedTamablockhi]: {
+                        ...prevState.Tamablockhis[pageState.selectedTamablockhi],
                         starvationBlock: starvationBlock.toNumber(),
                         dehydrationBlock: dehydrationBlock.toNumber(),
                         poopScheduledForBlockss: poopScheduledForBlockss.map(
@@ -134,9 +134,9 @@ const Home = () => {
     const updateTamoActionStates = (tamoId, actionState, value) => {
         setPageState(prevState => ({
             ...pageState,
-            Tamoblockhis: {
+            Tamablockhis: {
                 [tamoId]: {
-                    ...prevState.Tamoblockhis[tamoId],
+                    ...prevState.Tamablockhis[tamoId],
                     [actionState]: value
                 }
             }
@@ -172,15 +172,15 @@ const Home = () => {
                 </Paper>
 
                 {
-                    Object.keys(pageState.Tamoblockhis).map(key => {
-                        const item = pageState.Tamoblockhis[key]
+                    Object.keys(pageState.Tamablockhis).map(key => {
+                        const item = pageState.Tamablockhis[key]
                         const feedDisabled = item.feedState != "enabled"
                         const waterDisabled = item.waterState != "enabled"
                         const cleanDisabled = item.cleanState != "enabled"
 
                         return (
                             <Paper style={{ marginTop: 8 }} key={key}>
-                                <div>Tamoblockhi ID:  <b>{key}</b></div>
+                                <div>Tamablockhi ID:  <b>{key}</b></div>
                                 <div>Blocks until dehydrated:  <b>{item.dehydrationBlock - pageState.currentBlock}</b></div>
                                 <div>Blocks until starved:  <b>{item.starvationBlock - pageState.currentBlock}</b></div>
                                 <div>Blocks until next poop:  <b>{item.poopScheduledForBlockss[0] - pageState.currentBlock}</b></div>
@@ -208,8 +208,8 @@ const HomePageState = {
         poop: 0
     },
     currentBlock: 0,
-    selectedTamoblockhi: 11,
-    Tamoblockhis: {
+    selectedTamablockhi: 11,
+    Tamablockhis: {
         11: {
             starvationBlock: 0,
             dehydrationBlock: 0,

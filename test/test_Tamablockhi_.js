@@ -1,5 +1,5 @@
 // Example test script - Uses Mocha and Ganache
-const Contract = artifacts.require("Tamoblockhi");
+const Contract = artifacts.require("Tamablockhi");
 
 const mine = (timestamp) => {
     return new Promise((resolve, reject) => {
@@ -27,16 +27,16 @@ const mineMany = async (blocks) => {
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-const debugLogState = async (contract, tamoId) => {
+const debugLogState = async (contract, tamaId) => {
     let { number: blockNumber } = await web3.eth.getBlock("latest")
     console.log("Current Block: " + blockNumber)
-    const state = await contract.getPublicState(tamoId);
+    const state = await contract.getTamablockhiState(tamaId, false);
     console.log("Starves after: " + state.starvationBlock)
     console.log("Dehydrates after: " + state.dehydrationBlock)
     console.log("Infected after: " + (parseInt(state.poopQueue[0]) + 19185))
 }
 
-contract('Tamoblockhi', accounts => {
+contract('Tamablockhi', accounts => {
     let contract;
     beforeEach(async () => {
         // Deploy token contract
@@ -62,19 +62,19 @@ contract('Tamoblockhi', accounts => {
             []
         );
 
-        const tamoBalance = await contract.balanceOf(
+        const tamaBalance = await contract.balanceOf(
             accounts[0],
             11
         );
 
         assert.equal(
-            tamoBalance,
+            tamaBalance,
             1, 
-            `Unexpected tamo amount`
+            `Unexpected tama amount`
         );
     });
 
-    it("Tamos are stored in the account list", async () => {
+    it("Tamas are stored in the account list", async () => {
         await contract.hatch(
             accounts[0],
             []
@@ -90,29 +90,29 @@ contract('Tamoblockhi', accounts => {
             []
         );
 
-        const tokens = await contract.getTomablockhis(accounts[0]);
+        const tokens = await contract.getTamablockhiIds(accounts[0]);
 
         assert.equal(
             tokens[0].toNumber(),
             11, 
-            `Unexpected tamo`
+            `Unexpected tama`
         );
 
         assert.equal(
             tokens[1].toNumber(),
             12, 
-            `Unexpected tamo`
+            `Unexpected tama`
         );
 
         assert.equal(
             tokens[2].toNumber(),
             13, 
-            `Unexpected tamo`
+            `Unexpected tama`
         );
     });
 
-    it("Hatched Toma dies of starvation after blocks", async () => {
-        const expectedTamoId = 11
+    it("Hatched Tama dies of starvation after blocks", async () => {
+        const expectedTamaId = 11
         await contract.hatch(
             accounts[0],
             []
@@ -120,18 +120,18 @@ contract('Tamoblockhi', accounts => {
 
         await contract.water(
             accounts[0],
-            expectedTamoId,
+            expectedTamaId,
             1
         );
 
         await mineMany(7000)
 
-        await debugLogState(contract, expectedTamoId)
+        await debugLogState(contract, expectedTamaId)
 
         try {
             await contract.feed(
                 accounts[0],
-                expectedTamoId,
+                expectedTamaId,
                 4
             );
             assert(false, "This should not run. Expected error")
@@ -140,8 +140,8 @@ contract('Tamoblockhi', accounts => {
         }
     });
 
-    it("Hatched Toma dies of starvation after blocks and is persisted", async () => {
-        const expectedTamoId = 11
+    it("Hatched Tama dies of starvation after blocks and is persisted", async () => {
+        const expectedTamaId = 11
         await contract.hatch(
             accounts[0],
             []
@@ -149,19 +149,19 @@ contract('Tamoblockhi', accounts => {
 
         await contract.water(
             accounts[0],
-            expectedTamoId,
+            expectedTamaId,
             1
         );
 
         console.log("Mining 25589 blocks. This will take some time.")
         await mineMany(25589)
 
-        await debugLogState(contract, expectedTamoId)
+        await debugLogState(contract, expectedTamaId)
 
         try {
             await contract.feed(
                 accounts[0],
-                expectedTamoId,
+                expectedTamaId,
                 4
             );
             assert(false, "This should not run. Expected error")
@@ -170,8 +170,8 @@ contract('Tamoblockhi', accounts => {
         }
     });
 
-    it("Hatched Toma dies of dehydration after blocks", async () => {
-        const expectedTamoId = 11
+    it("Hatched Tama dies of dehydration after blocks", async () => {
+        const expectedTamaId = 11
         await contract.hatch(
             accounts[0],
             []
@@ -179,18 +179,18 @@ contract('Tamoblockhi', accounts => {
 
         await contract.feed(
             accounts[0],
-            expectedTamoId,
+            expectedTamaId,
             1000
         );
 
         await mineMany(6394)
 
-        await debugLogState(contract, expectedTamoId)
+        await debugLogState(contract, expectedTamaId)
 
         try {
             await contract.feed(
                 accounts[0],
-                expectedTamoId,
+                expectedTamaId,
                 1
             );
             assert(false, "This should not run. Expected error")
@@ -199,8 +199,8 @@ contract('Tamoblockhi', accounts => {
         }
     });
 
-    it("Hatched Toma dies of dehydration after blocks and is persisted", async () => {
-        const expectedTamoId = 11
+    it("Hatched Tama dies of dehydration after blocks and is persisted", async () => {
+        const expectedTamaId = 11
         await contract.hatch(
             accounts[0],
             []
@@ -208,19 +208,19 @@ contract('Tamoblockhi', accounts => {
 
         await contract.feed(
             accounts[0],
-            expectedTamoId,
+            expectedTamaId,
             1000
         );
 
         console.log("Mining 25589 blocks. This will take some time.")
         await mineMany(25589)
 
-        await debugLogState(contract, expectedTamoId)
+        await debugLogState(contract, expectedTamaId)
 
         try {
             await contract.feed(
                 accounts[0],
-                expectedTamoId,
+                expectedTamaId,
                 1
             );
             assert(false, "This should not run. Expected error")
@@ -229,8 +229,8 @@ contract('Tamoblockhi', accounts => {
         }
     });
 
-    it("Hatched Toma dies of infection", async () => {
-        const expectedTamoId = 11
+    it("Hatched Tama dies of infection", async () => {
+        const expectedTamaId = 11
         await contract.hatch(
             accounts[0],
             []
@@ -239,13 +239,13 @@ contract('Tamoblockhi', accounts => {
         // Day 1
         await contract.feed(
             accounts[0],
-            expectedTamoId,
+            expectedTamaId,
             1
         );
 
         await contract.water(
             accounts[0],
-            expectedTamoId,
+            expectedTamaId,
             1
         );
         await mineMany(6395)
@@ -253,13 +253,13 @@ contract('Tamoblockhi', accounts => {
         // Day 2
         await contract.feed(
             accounts[0],
-            expectedTamoId,
+            expectedTamaId,
             1
         );
 
         await contract.water(
             accounts[0],
-            expectedTamoId,
+            expectedTamaId,
             1
         );
         await mineMany(6395)
@@ -267,36 +267,36 @@ contract('Tamoblockhi', accounts => {
         // Day 3
         await contract.feed(
             accounts[0],
-            expectedTamoId,
+            expectedTamaId,
             1
         );
 
         await contract.water(
             accounts[0],
-            expectedTamoId,
+            expectedTamaId,
             1
         );
         await mineMany(6395)
 
         await contract.feed(
             accounts[0],
-            expectedTamoId,
+            expectedTamaId,
             1
         );
 
         await contract.water(
             accounts[0],
-            expectedTamoId,
+            expectedTamaId,
             1
         );
         await mineMany(6395)
 
-        await debugLogState(contract, expectedTamoId)
+        await debugLogState(contract, expectedTamaId)
 
         try {
             await contract.feed(
                 accounts[0],
-                expectedTamoId,
+                expectedTamaId,
                 1
             );
             assert(false, "This should not run. Expected error")
@@ -305,15 +305,15 @@ contract('Tamoblockhi', accounts => {
         }
     });
 
-    it("Hatched Toma has too poop after blocks", async () => {
-        const expectedTamoId = 11
+    it("Hatched Tama has too poop after blocks", async () => {
+        const expectedTamaId = 11
         await contract.hatch(
             accounts[0],
             []
         );
 
         let block = await web3.eth.getBlock("latest")
-        const state = await contract.getPublicState(expectedTamoId)
+        const state = await contract.getTamablockhiState(expectedTamaId, true)
         assert.equal(
             parseInt(state.poopQueue[0]),
             6395 + block.number,
@@ -328,7 +328,7 @@ contract('Tamoblockhi', accounts => {
     });
 
     it("clean can not remove poop earlier than block", async () => {
-        const expectedTamoId = 11
+        const expectedTamaId = 11
         await contract.hatch(
             accounts[0],
             []
@@ -337,7 +337,7 @@ contract('Tamoblockhi', accounts => {
         try {
             await contract.clean(
                 accounts[0],
-                expectedTamoId
+                expectedTamaId
             );
             assert(false, "This should not run. Expected error")
         } catch(e) {
@@ -438,7 +438,7 @@ contract('Tamoblockhi', accounts => {
     });
 
     it("feed is capped to max amount", async () => {
-        const expectedTamoId = 11
+        const expectedTamaId = 11
         await contract.hatch(
             accounts[0],
             []
@@ -446,14 +446,14 @@ contract('Tamoblockhi', accounts => {
 
         await contract.feed(
             accounts[0],
-            expectedTamoId,
+            expectedTamaId,
             40000
         );
 
         let block = await web3.eth.getBlock("latest")
 
         const maxBlocksBeforeStarvation = 19185
-        const state = await contract.getPublicState(expectedTamoId)
+        const state = await contract.getTamablockhiState(expectedTamaId, true)
         assert.equal(
             state.starvationBlock,
             maxBlocksBeforeStarvation + block.number,
@@ -462,14 +462,14 @@ contract('Tamoblockhi', accounts => {
     });
 
     it("feed multiple in single transaction", async () => {
-        const expectedTamoId = 11
+        const expectedTamaId = 11
         await contract.hatch(
             accounts[0],
             []
         );
 
         let block = await web3.eth.getBlock("latest")
-        const state = await contract.getPublicState(expectedTamoId)
+        const state = await contract.getTamablockhiState(expectedTamaId, true)
         assert.equal(
             (state.starvationBlock - block.number), 
             6395, 
@@ -478,12 +478,12 @@ contract('Tamoblockhi', accounts => {
 
         await contract.feed(
             accounts[0],
-            expectedTamoId,
+            expectedTamaId,
             2
         );
 
         let newBlock = await web3.eth.getBlock("latest")
-        const newState = await contract.getPublicState(expectedTamoId)
+        const newState = await contract.getTamablockhiState(expectedTamaId, true)
         assert.equal(
             (newState.starvationBlock - newBlock.number), 
             19184, 
@@ -492,7 +492,7 @@ contract('Tamoblockhi', accounts => {
     });
 
     it("water requires burns water, delays dehydration", async () => {        
-        const expectedTamoId = 11
+        const expectedTamaId = 11
         await contract.hatch(
             accounts[0],
             []
@@ -500,7 +500,7 @@ contract('Tamoblockhi', accounts => {
 
         let { number: blockNumber } = await web3.eth.getBlock("latest")
 
-        const state = await contract.getPublicState(expectedTamoId)
+        const state = await contract.getTamablockhiState(expectedTamaId, true)
         assert.equal(
             state.dehydrationBlock,
             blockNumber + 6395, 
@@ -513,20 +513,20 @@ contract('Tamoblockhi', accounts => {
         const waterAmount = 1;
         await contract.water(
             accounts[0],
-            expectedTamoId,
+            expectedTamaId,
             waterAmount
         );
 
-        const newState = await contract.getPublicState(expectedTamoId)
+        const newState = await contract.getTamablockhiState(expectedTamaId, true)
         assert.equal(
             newState.dehydrationBlock,
             parseInt(state.dehydrationBlock) + (waterAmount * 6395), 
-            `Unexpected tamo amount`
+            `Unexpected tama amount`
         );
     });
 
     it("feeding queues up a poop for a future block", async () => {        
-        const expectedTamoId = 11
+        const expectedTamaId = 11
         await contract.hatch(
             accounts[0],
             []
@@ -537,11 +537,11 @@ contract('Tamoblockhi', accounts => {
         const feedAmount = 3;
         await contract.feed(
             accounts[0],
-            expectedTamoId,
+            expectedTamaId,
             feedAmount
         );
 
-        const state = await contract.getPublicState(expectedTamoId)
+        const state = await contract.getTamablockhiState(expectedTamaId, true)
         assert.equal(
             parseInt(state.poopQueue[0]), 
             6395 + blockNumber,
@@ -562,7 +562,7 @@ contract('Tamoblockhi', accounts => {
     });
 
     it("clean will remove the first poop from the queue", async () => {        
-        const expectedTamoId = 11
+        const expectedTamaId = 11
         await contract.hatch(
             accounts[0],
             []
@@ -572,23 +572,23 @@ contract('Tamoblockhi', accounts => {
 
         await contract.feed(
             accounts[0],
-            expectedTamoId,
+            expectedTamaId,
             1
         );
 
         await contract.water(
             accounts[0],
-            expectedTamoId,
+            expectedTamaId,
             1
         );
 
         await contract.feed(
             accounts[0],
-            expectedTamoId,
+            expectedTamaId,
             1
         );
 
-        const state = await contract.getPublicState(expectedTamoId)
+        const state = await contract.getTamablockhiState(expectedTamaId, true)
         assert.equal(
             parseInt(state.poopQueue[0]), 
             6395 + blockNumber,
@@ -616,10 +616,10 @@ contract('Tamoblockhi', accounts => {
         await mineMany(6396)
         await contract.clean(
             accounts[0],
-            expectedTamoId
+            expectedTamaId
         )
 
-        const newState = await contract.getPublicState(expectedTamoId)
+        const newState = await contract.getTamablockhiState(expectedTamaId, true)
         assert.equal(
             parseInt(newState.poopQueue[0]), 
             6396 + blockNumber,
@@ -641,10 +641,10 @@ contract('Tamoblockhi', accounts => {
         await mineMany(2)
         await contract.clean(
             accounts[0],
-            expectedTamoId
+            expectedTamaId
         )
 
-        const secondState = await contract.getPublicState(expectedTamoId)
+        const secondState = await contract.getTamablockhiState(expectedTamaId, true)
         assert.equal(
             parseInt(secondState.poopQueue[0]),
             6398 + blockNumber,
@@ -660,10 +660,10 @@ contract('Tamoblockhi', accounts => {
         await mineMany(2)
         await contract.clean(
             accounts[0],
-            expectedTamoId
+            expectedTamaId
         )
 
-        const thirdState = await contract.getPublicState(expectedTamoId)
+        const thirdState = await contract.getTamablockhiState(expectedTamaId, true)
         assert.equal(
             thirdState.poopQueue.length,
             0,
@@ -682,13 +682,13 @@ contract('Tamoblockhi', accounts => {
     });
 
     it("mate will create and egg and remove resources", async () => {        
-        const expectedTamoIdOne = 11
+        const expectedTamaIdOne = 11
         await contract.hatch(
             accounts[0],
             []
         );
 
-        const expectedTamoIdTwo = 12
+        const expectedTamaIdTwo = 12
         await contract.hatch(
             accounts[0],
             []
@@ -726,8 +726,8 @@ contract('Tamoblockhi', accounts => {
 
         await contract.mate(
             accounts[0],
-            expectedTamoIdOne,
-            expectedTamoIdTwo,
+            expectedTamaIdOne,
+            expectedTamaIdTwo,
         );
 
         const newBalanceEggs = await contract.balanceOf(
@@ -762,14 +762,14 @@ contract('Tamoblockhi', accounts => {
     });
 
     it("mate requires the address owner", async () => {        
-        const expectedTamoIdOne = 11
-        const expectedTamoIdTwo = 12
+        const expectedTamaIdOne = 11
+        const expectedTamaIdTwo = 12
 
         try {
             await contract.mate(
                 accounts[1],
-                expectedTamoIdOne,
-                expectedTamoIdTwo,
+                expectedTamaIdOne,
+                expectedTamaIdTwo,
             );
             assert(false, "This should not run. Expected error")
         } catch(e) {
@@ -777,8 +777,8 @@ contract('Tamoblockhi', accounts => {
         }
     });
 
-    it("mate fails if tamos are the same", async () => {        
-        const expectedTamoIdOne = 11
+    it("mate fails if tamas are the same", async () => {        
+        const expectedTamaIdOne = 11
         await contract.hatch(
             accounts[0],
             []
@@ -787,8 +787,8 @@ contract('Tamoblockhi', accounts => {
         try {
             await contract.mate(
                 accounts[0],
-                expectedTamoIdOne,
-                expectedTamoIdOne,
+                expectedTamaIdOne,
+                expectedTamaIdOne,
             );
             assert(false, "This should not run. Expected error")
         } catch(e) {
