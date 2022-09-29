@@ -2,9 +2,9 @@
    "name": "moonbeam-truffle-box",
    "version": "1.0.0",
    "scripts": {
-      "compile": "npm run clean & ./node_modules/.bin/truffle compile & npm run copyBuildAbi",
-      "deployDev": "npm run compile & ./node_modules/.bin/truffle migrate --network dev",
-      "deployAlpha": "npm run compile & ./node_modules/.bin/truffle migrate --network alpha",
+      "compile": "npm run clean && ./node_modules/.bin/truffle compile",
+      "deployDev": "npm run compile && ./node_modules/.bin/truffle migrate --network dev && npm run copyBuildAbi",
+      "deployAlpha": "npm run compile && ./node_modules/.bin/truffle migrate --network alpha && npm run copyBuildAbi",
       "test": "./node_modules/.bin/truffle test",
       "clean": "rm -rf ./build",
       "copyBuildAbi": "cp ./build/contracts/Tamablockhi.json ./requests/app/src"

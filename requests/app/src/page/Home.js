@@ -3,6 +3,8 @@ import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Paper from '@mui/material/Paper';
+import LinearProgress from '@mui/material/LinearProgress';
+import pet from '../pet.gif'
 
 import { ethers } from 'ethers';
 const { abi, networks } = require('../Tamablockhi.json')
@@ -59,22 +61,27 @@ const Home = () => {
             egg: eggTokens.toNumber()
         }
 
-        const starvationBlock = await contract.starvationBlockOf(pageState.selectedTamablockhi);
-        const dehydrationBlock = await contract.dehydrationBlockOf(pageState.selectedTamablockhi);
-        const poopScheduledForBlockss = await contract.poopScheduledForBlocks(pageState.selectedTamablockhi)
+        const tamablockhiIds = await contract.getTamablockhiIds(walletAddress)
+
+        const tamablockhisLite = {}
+        await Promise.all(tamablockhiIds.map(async (idBigNumber) => {
+            const id = idBigNumber.toNumber()
+            const state = await contract.getTamablockhiState(id, true);
+            tamablockhisLite[id] = {
+                starvationBlock: state.starvationBlock.toNumber(),
+                dehydrationBlock: state.dehydrationBlock.toNumber(),
+                poopScheduledForBlocks: state.poopQueue.map(bigNumber => {
+                    return bigNumber.toNumber()
+                })
+            }
+        }))
 
         setPageState( prevState => ({
                 ...prevState,
                 balances: balances,
-                Tamablockhis: {
-                    [pageState.selectedTamablockhi]: {
-                        ...prevState.Tamablockhis[pageState.selectedTamablockhi],
-                        starvationBlock: starvationBlock.toNumber(),
-                        dehydrationBlock: dehydrationBlock.toNumber(),
-                        poopScheduledForBlockss: poopScheduledForBlockss.map(
-                            block => block.toNumber()
-                        )
-                    }
+                tamablockhis: {
+                    ...prevState.tamablockhis,
+                    ...tamablockhisLite
                 }
             })
         )
@@ -91,7 +98,7 @@ const Home = () => {
             console.log(reciept)
             refreshData(contract)
         } catch (e) {
-            console.error(e)
+            console.error("Reason Code: " + resolveRevertErrorCode(e))
         } finally {
             updateTamoActionStates(tamoId, "feedState", "enabled")
         }
@@ -108,7 +115,7 @@ const Home = () => {
             console.log(reciept)
             refreshData(contract)
         } catch (e) {
-            console.error(e)
+            console.error("Reason Code: " + resolveRevertErrorCode(e))
         } finally {
             updateTamoActionStates(tamoId, "waterState", "enabled")
         }
@@ -125,32 +132,60 @@ const Home = () => {
             console.log(reciept)
             refreshData(contract)
         } catch (e) {
-            console.error(e)
+            console.error("Reason Code: " + resolveRevertErrorCode(e))
         } finally {
             updateTamoActionStates(tamoId, "cleanState", "enabled")
         }
     }
 
+    const handleHatch = async () => {
+        setPageState(prevState => ({
+            ...prevState,
+            hatching: true
+        }))
+
+        try {
+            const walletAddress = contract.signer.address;
+            const tx = await contract.hatch(walletAddress, []);
+            console.log(`Transaction Sent: ${tx.hash}`)
+            const reciept = await tx.wait()
+            console.log(reciept)
+            refreshData(contract)
+        } catch (e) {
+            console.error("Reason Code: " + resolveRevertErrorCode(e))
+        } finally {
+            setPageState(prevState => ({
+                ...prevState,
+                hatching: false
+            }))
+        }
+    }
+
     const updateTamoActionStates = (tamoId, actionState, value) => {
         setPageState(prevState => ({
-            ...pageState,
-            Tamablockhis: {
+            ...prevState,
+            tamablockhis: {
+                ...prevState.tamablockhis,
                 [tamoId]: {
-                    ...prevState.Tamablockhis[tamoId],
+                    ...prevState.tamablockhis[tamoId],
                     [actionState]: value
                 }
             }
         }))
     }
 
+    const calculateNumberOfPoops = (poopScheduledForBlocks, currentBlock) => {
+        return poopScheduledForBlocks.filter(item => item < currentBlock).length
+    }
+
     return (
         <div className="App">
             <header className="App-header">
-                <Paper style={{ marginTop: 8 }}>
+                <Paper style={{ marginTop: 8, padding: 8  }}>
                     <div>Block Number:  {pageState.currentBlock}</div>
                 </Paper>
 
-                <Stack style={{ marginTop: 8 }} direction="row" spacing={2}>
+                <Stack style={{ marginTop: 8, padding: 8  }} direction="row" spacing={2}>
                     <Paper style={{ padding: 8 }}>
                         <TextField
                             id="textfield-pk"
@@ -162,28 +197,38 @@ const Home = () => {
                     <Button variant="contained" onClick={handleConnectClick} >Connect</Button>
                 </Stack>
 
-                <Paper style={{ marginTop: 8 }}>
-                    <Stack style={{ padding: 8 }} spacing={2} direction="row">
+                <Paper style={{ marginTop: 8, padding: 8 }}>
+                    <Stack spacing={2} direction="row">
                         <div>EGG:   {pageState.balances?.egg}</div>
                         <div>FOOD:  {pageState.balances?.food}</div>
                         <div>WATER: {pageState.balances?.water}</div>
                         <div>POOP:  {pageState.balances?.poop}</div>
+                        <Button variant="contained" 
+                                onClick={handleHatch}
+                                disabled={pageState.hatching}>
+                            Hatch
+                        </Button>
                     </Stack>
                 </Paper>
 
                 {
-                    Object.keys(pageState.Tamablockhis).map(key => {
-                        const item = pageState.Tamablockhis[key]
-                        const feedDisabled = item.feedState != "enabled"
-                        const waterDisabled = item.waterState != "enabled"
-                        const cleanDisabled = item.cleanState != "enabled"
+                    Object.keys(pageState.tamablockhis).map(key => {
+                        const item = pageState.tamablockhis[key]
+                        const feedDisabled = item.feedState != "enabled" && item.feedState
+                        const waterDisabled = item.waterState != "enabled" && item.waterState
+                        const cleanDisabled = item.cleanState != "enabled" && item.cleanState
+
+                        const starvationPercent = (item.starvationBlock - pageState.currentBlock) / 19185 * 100
+                        const dehydratedPercent = (item.dehydrationBlock - pageState.currentBlock) / 19185 * 100
 
                         return (
-                            <Paper style={{ marginTop: 8 }} key={key}>
-                                <div>Tamablockhi ID:  <b>{key}</b></div>
-                                <div>Blocks until dehydrated:  <b>{item.dehydrationBlock - pageState.currentBlock}</b></div>
-                                <div>Blocks until starved:  <b>{item.starvationBlock - pageState.currentBlock}</b></div>
-                                <div>Blocks until next poop:  <b>{item.poopScheduledForBlockss[0] - pageState.currentBlock}</b></div>
+                            <Paper style={{ marginTop: 8, padding: 8 }} key={key}>
+                                <img src={pet}/>
+                                <div>Thirst: %{dehydratedPercent}</div>
+                                <LinearProgress variant="determinate" value={dehydratedPercent} />
+                                <div>Hunger: %{starvationPercent}</div>
+                                <LinearProgress variant="determinate" value={starvationPercent} />
+                                <div>Poops:  <b>{calculateNumberOfPoops(item.poopScheduledForBlocks, pageState.currentBlock)}</b></div>
                                 <Button style={{ margin: 8 }} variant="contained" 
                                     onClick={() => handleFeed(key)} disabled={feedDisabled}>Feed</Button>
                                 <Button style={{ margin: 8 }} variant="contained" 
@@ -199,6 +244,9 @@ const Home = () => {
     );
 }
 
+const resolveRevertErrorCode = (e) => {
+    return e.message.match(/\\"VM Exception while processing transaction: revert ([0-9]*)\\"/)[1]
+} 
 
 const HomePageState = {
     balances: {
@@ -209,16 +257,17 @@ const HomePageState = {
     },
     currentBlock: 0,
     selectedTamablockhi: 11,
-    Tamablockhis: {
-        11: {
-            starvationBlock: 0,
-            dehydrationBlock: 0,
-            poopScheduledForBlockss: [0],
-            feedState: "enabled",
-            waterState: "enabled",
-            cleanState: "enabled"
-        }
-    }
+    tamablockhis: {}
+    // tamablockhis: {
+    //     11: {
+            // starvationBlock: 0,
+            // dehydrationBlock: 0,
+            // poopScheduledForBlockss: [0],
+            // feedState: "enabled",
+            // waterState: "enabled",
+            // cleanState: "enabled"
+    //     }
+    // }
 }
 
 export default Home;

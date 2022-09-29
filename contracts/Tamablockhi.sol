@@ -77,10 +77,10 @@ contract Tamablockhi is ERC1155, Ownable, ERC1155Supply {
         }
         require(tokenId >= TAMO_MIN_TOKEN_ID, ERROR_NOT_TAMO);
         TamablockhiState memory tamoState;
-        tamoState.dehydrationBlock = states[tamoCurrentId].dehydrationBlock;
-        tamoState.starvationBlock = states[tamoCurrentId].starvationBlock;
-        tamoState.poopQueue = peekFirst(states[tamoCurrentId].poopQueue, states[tamoCurrentId].poopQueue.last - states[tamoCurrentId].poopQueue.first);
-        tamoState.cropQueue = peekFirst(states[tamoCurrentId].cropQueue, states[tamoCurrentId].cropQueue.last - states[tamoCurrentId].cropQueue.first);
+        tamoState.dehydrationBlock = states[tokenId].dehydrationBlock;
+        tamoState.starvationBlock = states[tokenId].starvationBlock;
+        tamoState.poopQueue = peekFirst(states[tokenId].poopQueue, states[tokenId].poopQueue.last - states[tokenId].poopQueue.first);
+        tamoState.cropQueue = peekFirst(states[tokenId].cropQueue, states[tokenId].cropQueue.last - states[tokenId].cropQueue.first);
         return tamoState;
     }
 
