@@ -4,6 +4,7 @@ import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Paper from '@mui/material/Paper';
 import LinearProgress from '@mui/material/LinearProgress';
+import Grid from '@mui/material/Grid';
 import pet from '../pet.gif'
 
 import { ethers } from 'ethers';
@@ -26,13 +27,13 @@ const Home = () => {
     React.useEffect(() => {
         provider.on("block", async (blockNumber) => {
             console.log("Block: " + blockNumber)
-            setPageState( prevState => ({
+            setPageState(prevState => ({
                 ...prevState,
                 currentBlock: blockNumber
             }))
         });
         return () => provider.removeAllListeners();
-      }, []);
+    }, []);
 
     const handleConnectClick = async () => {
         // Initialize the contract
@@ -76,14 +77,14 @@ const Home = () => {
             }
         }))
 
-        setPageState( prevState => ({
-                ...prevState,
-                balances: balances,
-                tamablockhis: {
-                    ...prevState.tamablockhis,
-                    ...tamablockhisLite
-                }
-            })
+        setPageState(prevState => ({
+            ...prevState,
+            balances: balances,
+            tamablockhis: {
+                ...prevState.tamablockhis,
+                ...tamablockhisLite
+            }
+        })
         )
     }
 
@@ -181,11 +182,11 @@ const Home = () => {
     return (
         <div className="App">
             <header className="App-header">
-                <Paper style={{ marginTop: 8, padding: 8  }}>
+                <Paper style={{ marginTop: 8, padding: 8 }}>
                     <div>Block Number:  {pageState.currentBlock}</div>
                 </Paper>
 
-                <Stack style={{ marginTop: 8, padding: 8  }} direction="row" spacing={2}>
+                <Stack style={{ marginTop: 8, padding: 8 }} direction="row" spacing={2}>
                     <Paper style={{ padding: 8 }}>
                         <TextField
                             id="textfield-pk"
@@ -203,42 +204,52 @@ const Home = () => {
                         <div>FOOD:  {pageState.balances?.food}</div>
                         <div>WATER: {pageState.balances?.water}</div>
                         <div>POOP:  {pageState.balances?.poop}</div>
-                        <Button variant="contained" 
-                                onClick={handleHatch}
-                                disabled={pageState.hatching}>
+                        <Button variant="contained"
+                            onClick={handleHatch}
+                            disabled={pageState.hatching}>
                             Hatch
                         </Button>
                     </Stack>
                 </Paper>
 
-                {
-                    Object.keys(pageState.tamablockhis).map(key => {
-                        const item = pageState.tamablockhis[key]
-                        const feedDisabled = item.feedState != "enabled" && item.feedState
-                        const waterDisabled = item.waterState != "enabled" && item.waterState
-                        const cleanDisabled = item.cleanState != "enabled" && item.cleanState
+                <Grid 
+                    container 
+                    spacing={2} 
+                    justifyContent="center"
+                    alignItems="center">
+                    {
+                        Object.keys(pageState.tamablockhis).map(key => {
+                            const item = pageState.tamablockhis[key]
+                            const feedDisabled = item.feedState != "enabled" && item.feedState
+                            const waterDisabled = item.waterState != "enabled" && item.waterState
+                            const cleanDisabled = item.cleanState != "enabled" && item.cleanState
 
-                        const starvationPercent = (item.starvationBlock - pageState.currentBlock) / 19185 * 100
-                        const dehydratedPercent = (item.dehydrationBlock - pageState.currentBlock) / 19185 * 100
+                            const starvationPercent = (item.starvationBlock - pageState.currentBlock) / 19185 * 100
+                            const dehydratedPercent = (item.dehydrationBlock - pageState.currentBlock) / 19185 * 100
+                            const nextPoop = item.poopScheduledForBlocks[0] - pageState.currentBlock
 
-                        return (
-                            <Paper style={{ marginTop: 8, padding: 8 }} key={key}>
-                                <img src={pet}/>
-                                <div>Thirst: %{dehydratedPercent}</div>
-                                <LinearProgress variant="determinate" value={dehydratedPercent} />
-                                <div>Hunger: %{starvationPercent}</div>
-                                <LinearProgress variant="determinate" value={starvationPercent} />
-                                <div>Poops:  <b>{calculateNumberOfPoops(item.poopScheduledForBlocks, pageState.currentBlock)}</b></div>
-                                <Button style={{ margin: 8 }} variant="contained" 
-                                    onClick={() => handleFeed(key)} disabled={feedDisabled}>Feed</Button>
-                                <Button style={{ margin: 8 }} variant="contained" 
-                                    onClick={() => handleWater(key)} disabled={waterDisabled}>Water</Button>
-                                <Button style={{ margin: 8 }} variant="contained" 
-                                    onClick={() => handleClean(key)} disabled={cleanDisabled}>Clean</Button>
-                            </Paper>
-                        )
-                    })
-                }
+                            return (
+                                <Grid item xs={12} md={6} style={{ display: 'flex', justifyContent: 'center'}}>
+                                    <Paper style={{ marginTop: 8, padding: 8, width: "max-content" }} key={key}>
+                                        <img src={pet} />
+                                        <div>Thirst: %{dehydratedPercent}</div>
+                                        <LinearProgress variant="determinate" value={dehydratedPercent} />
+                                        <div>Hunger: %{starvationPercent}</div>
+                                        <LinearProgress variant="determinate" value={starvationPercent} />
+                                        <div>Poops:  <b>{calculateNumberOfPoops(item.poopScheduledForBlocks, pageState.currentBlock)} - {nextPoop}</b></div>
+                                        <Button style={{ margin: 8 }} variant="contained"
+                                            onClick={() => handleFeed(key)} disabled={feedDisabled}>Feed</Button>
+                                        <Button style={{ margin: 8 }} variant="contained"
+                                            onClick={() => handleWater(key)} disabled={waterDisabled}>Water</Button>
+                                        <Button style={{ margin: 8 }} variant="contained"
+                                            onClick={() => handleClean(key)} disabled={cleanDisabled}>Clean</Button>
+                                    </Paper>
+                                </Grid>
+                            )
+                        })
+                    }
+                </Grid>
+                
             </header>
         </div>
     );
@@ -246,28 +257,17 @@ const Home = () => {
 
 const resolveRevertErrorCode = (e) => {
     return e.message.match(/\\"VM Exception while processing transaction: revert ([0-9]*)\\"/)[1]
-} 
+}
 
 const HomePageState = {
+    currentBlock: 0,
     balances: {
         egg: 0,
         food: 0,
         water: 0,
         poop: 0
     },
-    currentBlock: 0,
-    selectedTamablockhi: 11,
     tamablockhis: {}
-    // tamablockhis: {
-    //     11: {
-            // starvationBlock: 0,
-            // dehydrationBlock: 0,
-            // poopScheduledForBlockss: [0],
-            // feedState: "enabled",
-            // waterState: "enabled",
-            // cleanState: "enabled"
-    //     }
-    // }
 }
 
 export default Home;
