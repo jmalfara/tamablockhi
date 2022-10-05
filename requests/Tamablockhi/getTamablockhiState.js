@@ -26,7 +26,7 @@ const contract = new ethers.Contract(contractAddress, abi, provider);
 const request = async () => {
   const args = process.argv.slice(2);
   console.log(`Making a call to contract at address: ${contractAddress}`);
-  const data = await contract.getTamablockhiState(args[0], true);
+  const data = await contract.getTamablockhiState(args[0], false);
   console.log(`${data}`);
 };
 

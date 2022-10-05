@@ -3,21 +3,23 @@ import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Paper from '@mui/material/Paper';
-import LinearProgress from '@mui/material/LinearProgress';
 import Grid from '@mui/material/Grid';
-import pet from '../pet.gif'
+import TokenFeed from '../components/TokenFeed';
 
 import { ethers } from 'ethers';
+import TamablockhiView from '../components/TamablockhiView';
 const { abi, networks } = require('../Tamablockhi.json')
 
 const rpcMoonbaseAlpha = 'https://rpc.api.moonbase.moonbeam.network'
+const chainId = 1287
 const provider = new ethers.providers.StaticJsonRpcProvider(
     rpcMoonbaseAlpha,
     {
-        chainId: 1287,
+        chainId: chainId,
         name: "Moonbeam Alpha",
     }
 );
+const contractAddress = networks[chainId].address
 
 const Home = () => {
     const [privateKey, setPrivateKey] = React.useState("")
@@ -39,7 +41,6 @@ const Home = () => {
         // Initialize the contract
         let wallet = new ethers.Wallet(privateKey, provider);
         console.log(wallet.address)
-        const contractAddress = networks[1287].address;
         const contract = new ethers.Contract(contractAddress, abi, wallet)
 
         setContract(contract)
@@ -67,13 +68,17 @@ const Home = () => {
         const tamablockhisLite = {}
         await Promise.all(tamablockhiIds.map(async (idBigNumber) => {
             const id = idBigNumber.toNumber()
-            const state = await contract.getTamablockhiState(id, true);
-            tamablockhisLite[id] = {
-                starvationBlock: state.starvationBlock.toNumber(),
-                dehydrationBlock: state.dehydrationBlock.toNumber(),
-                poopScheduledForBlocks: state.poopQueue.map(bigNumber => {
-                    return bigNumber.toNumber()
-                })
+            try {
+                const state = await contract.getTamablockhiState(id, true);
+                tamablockhisLite[id] = {
+                    starvationBlock: state.starvationBlock.toNumber(),
+                    dehydrationBlock: state.dehydrationBlock.toNumber(),
+                    poopScheduledForBlocks: state.poopQueue.map(bigNumber => {
+                        return bigNumber.toNumber()
+                    })
+                }
+            } catch (e) {
+                console.error(e)
             }
         }))
 
@@ -175,82 +180,49 @@ const Home = () => {
         }))
     }
 
-    const calculateNumberOfPoops = (poopScheduledForBlocks, currentBlock) => {
-        return poopScheduledForBlocks.filter(item => item < currentBlock).length
-    }
-
     return (
-        <div className="App">
-            <header className="App-header">
-                <Paper style={{ marginTop: 8, padding: 8 }}>
-                    <div>Block Number:  {pageState.currentBlock}</div>
+        <div className="App-header">
+            <Paper style={{ marginTop: 8, padding: 8 }}>
+                <div>Block Number:  {pageState.currentBlock}</div>
+            </Paper>
+
+            <Stack style={{ marginTop: 8, padding: 8 }} direction="row" spacing={2}>
+                <Paper style={{ padding: 8 }}>
+                    <TextField
+                        id="textfield-pk"
+                        label="Private Key (TO BE REMOVED)"
+                        type="password"
+                        value={privateKey}
+                        onChange={(e) => setPrivateKey(e.target.value)} />
                 </Paper>
+                <Button variant="contained" onClick={handleConnectClick} >Connect</Button>
+            </Stack>
 
-                <Stack style={{ marginTop: 8, padding: 8 }} direction="row" spacing={2}>
-                    <Paper style={{ padding: 8 }}>
-                        <TextField
-                            id="textfield-pk"
-                            label="Private Key (TO BE REMOVED)"
-                            type="password"
-                            value={privateKey}
-                            onChange={(e) => setPrivateKey(e.target.value)} />
-                    </Paper>
-                    <Button variant="contained" onClick={handleConnectClick} >Connect</Button>
-                </Stack>
+            <TokenFeed
+                tokens={pageState.balances}
+                handleHatch={handleHatch}
+                hatching={pageState.hatching} />
 
-                <Paper style={{ marginTop: 8, padding: 8 }}>
-                    <Stack spacing={2} direction="row">
-                        <div>EGG:   {pageState.balances?.egg}</div>
-                        <div>FOOD:  {pageState.balances?.food}</div>
-                        <div>WATER: {pageState.balances?.water}</div>
-                        <div>POOP:  {pageState.balances?.poop}</div>
-                        <Button variant="contained"
-                            onClick={handleHatch}
-                            disabled={pageState.hatching}>
-                            Hatch
-                        </Button>
-                    </Stack>
-                </Paper>
-
-                <Grid 
-                    container 
-                    spacing={2} 
-                    justifyContent="center"
-                    alignItems="center">
-                    {
-                        Object.keys(pageState.tamablockhis).map(key => {
-                            const item = pageState.tamablockhis[key]
-                            const feedDisabled = item.feedState != "enabled" && item.feedState
-                            const waterDisabled = item.waterState != "enabled" && item.waterState
-                            const cleanDisabled = item.cleanState != "enabled" && item.cleanState
-
-                            const starvationPercent = (item.starvationBlock - pageState.currentBlock) / 19185 * 100
-                            const dehydratedPercent = (item.dehydrationBlock - pageState.currentBlock) / 19185 * 100
-                            const nextPoop = item.poopScheduledForBlocks[0] - pageState.currentBlock
-
-                            return (
-                                <Grid item xs={12} md={6} style={{ display: 'flex', justifyContent: 'center'}}>
-                                    <Paper style={{ marginTop: 8, padding: 8, width: "max-content" }} key={key}>
-                                        <img src={pet} />
-                                        <div>Thirst: %{dehydratedPercent}</div>
-                                        <LinearProgress variant="determinate" value={dehydratedPercent} />
-                                        <div>Hunger: %{starvationPercent}</div>
-                                        <LinearProgress variant="determinate" value={starvationPercent} />
-                                        <div>Poops:  <b>{calculateNumberOfPoops(item.poopScheduledForBlocks, pageState.currentBlock)} - {nextPoop}</b></div>
-                                        <Button style={{ margin: 8 }} variant="contained"
-                                            onClick={() => handleFeed(key)} disabled={feedDisabled}>Feed</Button>
-                                        <Button style={{ margin: 8 }} variant="contained"
-                                            onClick={() => handleWater(key)} disabled={waterDisabled}>Water</Button>
-                                        <Button style={{ margin: 8 }} variant="contained"
-                                            onClick={() => handleClean(key)} disabled={cleanDisabled}>Clean</Button>
-                                    </Paper>
-                                </Grid>
-                            )
-                        })
-                    }
-                </Grid>
-                
-            </header>
+            <Grid
+                container
+                justifyContent="center"
+                alignItems="center">
+                {
+                    Object.keys(pageState.tamablockhis).map(key => {
+                        const state = pageState.tamablockhis[key]
+                        return (
+                            <TamablockhiView
+                                id={key}
+                                tamablockhiState={state}
+                                currentBlock={pageState.currentBlock}
+                                handleClean={handleClean}
+                                handleFeed={handleFeed}
+                                handleWater={handleWater}
+                            />
+                        )
+                    })
+                }
+            </Grid>
         </div>
     );
 }

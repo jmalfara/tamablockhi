@@ -1,6 +1,6 @@
 const { privateKeyDev } = require('../../config')
 const { network: networkConfig } = require('../config')
-const { abi, networks } = require('../../build/contracts/Tamoblockhi.json')
+const { abi, networks } = require('../../build/contracts/Tamablockhi.json')
 
 const network = networks[networkConfig.chainId]
 const ethers = require('ethers');

@@ -31,8 +31,10 @@ const contract = new ethers.Contract(contractAddress, abi, wallet);
 const request = async () => {
   const args = process.argv.slice(2);
   console.log(`Making a call to contract at address: ${contractAddress}`);
-  const data = await contract.hatch(args[0], []);
-  console.log(`Transaction Sent: ${data.hash}`)
+  const data = await contract.safeTransferFrom(args[0], args[1], args[2], parseInt(args[3]), []);
+  console.log(`Transaction Sent but waiting: ${data.hash}`)
+  const reciept = await data.wait()
+  console.log(JSON.stringify(reciept))
 };
 
 request();
