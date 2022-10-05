@@ -1,30 +1,32 @@
 import * as React from 'react';
-import Stack from '@mui/material/Stack';
-import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
 import Paper from '@mui/material/Paper';
 import Grid from '@mui/material/Grid';
 import TokenFeed from '../components/TokenFeed';
 
 import { ethers } from 'ethers';
 import TamablockhiView from '../components/TamablockhiView';
+import usePrivateKey from '../hooks/usePrivateKey';
+import { Alert, Button, Stack, TextField } from '@mui/material';
+import TransferView from '../components/TransferView';
+// import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 const { abi, networks } = require('../Tamablockhi.json')
 
 const rpcMoonbaseAlpha = 'https://rpc.api.moonbase.moonbeam.network'
 const chainId = 1287
+const networkName = "Moonbeam Alpha"
+const explorerUrl = "https://moonbase.moonscan.io"
 const provider = new ethers.providers.StaticJsonRpcProvider(
     rpcMoonbaseAlpha,
     {
         chainId: chainId,
-        name: "Moonbeam Alpha",
+        name: networkName,
     }
 );
 const contractAddress = networks[chainId].address
 
 const Home = () => {
-    const [privateKey, setPrivateKey] = React.useState("")
-    const [contract, setContract] = React.useState(null)
     const [pageState, setPageState] = React.useState(HomePageState)
+    const [privateKey] = usePrivateKey()
 
     React.useEffect(() => {
         provider.on("block", async (blockNumber) => {
@@ -37,15 +39,34 @@ const Home = () => {
         return () => provider.removeAllListeners();
     }, []);
 
-    const handleConnectClick = async () => {
-        // Initialize the contract
+    React.useEffect(() => {
         let wallet = new ethers.Wallet(privateKey, provider);
-        console.log(wallet.address)
         const contract = new ethers.Contract(contractAddress, abi, wallet)
+        console.log(wallet.address)
 
-        setContract(contract)
+        console.log(contract)
         refreshData(contract)
-    }
+
+        setPageState(prevState => ({
+            ...prevState,
+            contract: contract,
+            connectedText: `Connected (${networkName})`
+        }))
+    }, [privateKey]);
+
+    React.useEffect(() => {
+        if (alert == null) {
+            return
+        }
+        const interval = setInterval(() => {
+            setPageState(prevState => ({
+                ...prevState,
+                alert: null
+            }))
+            clearInterval(interval)
+        }, 3000);
+        return () => clearInterval(interval);
+    }, [pageState.alert]);
 
     const refreshData = async (contract) => {
         const walletAddress = contract.signer.address;
@@ -89,20 +110,19 @@ const Home = () => {
                 ...prevState.tamablockhis,
                 ...tamablockhisLite
             }
-        })
-        )
+        }))
     }
 
     const handleFeed = async (tamoId) => {
         updateTamoActionStates(tamoId, "feedState", "loading")
 
         try {
-            const walletAddress = contract.signer.address;
-            const tx = await contract.feed(walletAddress, tamoId, 1);
+            const walletAddress = pageState.contract.signer.address;
+            const tx = await pageState.contract.feed(walletAddress, tamoId, 1);
             console.log(`Transaction Sent: ${tx.hash}`)
             const reciept = await tx.wait()
             console.log(reciept)
-            refreshData(contract)
+            refreshData(pageState.contract)
         } catch (e) {
             console.error("Reason Code: " + resolveRevertErrorCode(e))
         } finally {
@@ -114,12 +134,12 @@ const Home = () => {
         updateTamoActionStates(tamoId, "waterState", "loading")
 
         try {
-            const walletAddress = contract.signer.address;
-            const tx = await contract.water(walletAddress, tamoId, 1);
+            const walletAddress = pageState.contract.signer.address;
+            const tx = await pageState.contract.water(walletAddress, tamoId, 1);
             console.log(`Transaction Sent: ${tx.hash}`)
             const reciept = await tx.wait()
             console.log(reciept)
-            refreshData(contract)
+            refreshData(pageState.contract)
         } catch (e) {
             console.error("Reason Code: " + resolveRevertErrorCode(e))
         } finally {
@@ -131,12 +151,12 @@ const Home = () => {
         updateTamoActionStates(tamoId, "cleanState", "loading")
 
         try {
-            const walletAddress = contract.signer.address;
-            const tx = await contract.clean(walletAddress, tamoId);
+            const walletAddress = pageState.contract.signer.address;
+            const tx = await pageState.contract.clean(walletAddress, tamoId);
             console.log(`Transaction Sent: ${tx.hash}`)
             const reciept = await tx.wait()
             console.log(reciept)
-            refreshData(contract)
+            refreshData(pageState.contract)
         } catch (e) {
             console.error("Reason Code: " + resolveRevertErrorCode(e))
         } finally {
@@ -151,18 +171,45 @@ const Home = () => {
         }))
 
         try {
-            const walletAddress = contract.signer.address;
-            const tx = await contract.hatch(walletAddress, []);
+            const walletAddress = pageState.contract.signer.address;
+            const tx = await pageState.contract.hatch(walletAddress, []);
             console.log(`Transaction Sent: ${tx.hash}`)
             const reciept = await tx.wait()
             console.log(reciept)
-            refreshData(contract)
+            refreshData(pageState.contract)
         } catch (e) {
             console.error("Reason Code: " + resolveRevertErrorCode(e))
         } finally {
             setPageState(prevState => ({
                 ...prevState,
                 hatching: false
+            }))
+        }
+    }
+
+    const handleTransfer = async (data) => {
+        console.log(data)
+        setPageState(prevState => ({
+            ...prevState,
+            transfering: true
+        }))
+
+        const { tokenId, destinationAddress, amount } = data
+        console.log(data)
+        try {
+            const walletAddress = pageState.contract.signer.address;
+            const tx = await pageState.contract.safeTransferFrom(walletAddress, destinationAddress, tokenId, parseInt(amount), []);
+            console.log(`Transaction Sent: ${tx.hash}`)
+            const reciept = await tx.wait()
+            console.log(reciept)
+            refreshData(pageState.contract)
+        } catch (e) {
+            console.error(e)
+            console.error("Reason Code: " + resolveRevertErrorCode(e))
+        } finally {
+            setPageState(prevState => ({
+                ...prevState,
+                transfering: false
             }))
         }
     }
@@ -180,59 +227,84 @@ const Home = () => {
         }))
     }
 
-    return (
-        <div className="App-header">
-            <Paper style={{ marginTop: 8, padding: 8 }}>
-                <div>Block Number:  {pageState.currentBlock}</div>
-            </Paper>
+    const resolveRevertErrorCode = (e) => {
+        var message
+        try {
+            message = e.message.match(/\\"VM Exception while processing transaction: revert ([0-9]*)\\"/)[1]
+        } catch {
+            message = "An unhandled error has occured"
+        }
+        setPageState(prevState => ({
+            ...prevState,
+            alert: message
+        }))
+        return message
+    }
 
-            <Stack style={{ marginTop: 8, padding: 8 }} direction="row" spacing={2}>
-                <Paper style={{ padding: 8 }}>
-                    <TextField
-                        id="textfield-pk"
-                        label="Private Key (TO BE REMOVED)"
-                        type="password"
-                        value={privateKey}
-                        onChange={(e) => setPrivateKey(e.target.value)} />
+    return (
+        <div>
+            <Stack direction="row" spacing={2} style={{ justifyContent: "space-between", backgroundColor: "gray" }}>
+                <Paper style={{ margin: 8, padding: 8 }}>
+                    <div>{pageState.currentBlock}</div>
                 </Paper>
-                <Button variant="contained" onClick={handleConnectClick} >Connect</Button>
+
+                <div style={{ margin: 8 }}>
+                    <Button style={{ margin: 8 }} variant="contained"
+                        onClick={() => {
+                            window.open(`${explorerUrl}/address/${pageState.contract.signer.address}`)
+                        }}>{pageState.connectedText}</Button>
+
+                    <Button variant="contained"
+                        onClick={() => {
+                            window.open(`https://apps.moonbeam.network/moonbase-alpha/faucet/`)
+                        }}>Test Faucet</Button>
+                </div>
             </Stack>
 
-            <TokenFeed
-                tokens={pageState.balances}
-                handleHatch={handleHatch}
-                hatching={pageState.hatching} />
+            {
+                pageState.alert ? <Alert severity="error">{pageState.alert}</Alert> : null
+            }
 
-            <Grid
-                container
-                justifyContent="center"
-                alignItems="center">
-                {
-                    Object.keys(pageState.tamablockhis).map(key => {
-                        const state = pageState.tamablockhis[key]
-                        return (
-                            <TamablockhiView
-                                id={key}
-                                tamablockhiState={state}
-                                currentBlock={pageState.currentBlock}
-                                handleClean={handleClean}
-                                handleFeed={handleFeed}
-                                handleWater={handleWater}
-                            />
-                        )
-                    })
-                }
-            </Grid>
+            <div className="App-header">
+                <TokenFeed
+                    tokens={pageState.balances}
+                    handleHatch={handleHatch}
+                    hatching={pageState.hatching} />
+
+                <div style={{ margin: 8, padding: 8 }}>
+                    <TransferView submitTransfer={handleTransfer} transfering={pageState.transfering}/>
+                </div>
+
+                <Grid
+                    container
+                    justifyContent="center"
+                    alignItems="center">
+                    {
+                        Object.keys(pageState.tamablockhis).map(key => {
+                            const state = pageState.tamablockhis[key]
+                            return (
+                                <TamablockhiView
+                                    id={key}
+                                    tamablockhiState={state}
+                                    currentBlock={pageState.currentBlock}
+                                    handleClean={handleClean}
+                                    handleFeed={handleFeed}
+                                    handleWater={handleWater}
+                                />
+                            )
+                        })
+                    }
+                </Grid>
+            </div>
         </div>
     );
 }
 
-const resolveRevertErrorCode = (e) => {
-    return e.message.match(/\\"VM Exception while processing transaction: revert ([0-9]*)\\"/)[1]
-}
-
 const HomePageState = {
     currentBlock: 0,
+    contractAddress: null,
+    connectedText: "Connecting",
+    alert: null,
     balances: {
         egg: 0,
         food: 0,
