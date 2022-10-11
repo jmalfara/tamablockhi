@@ -71,12 +71,12 @@ const TransferView = ({
         <Paper style={{ padding: 8 }}>
             <Stack style={{ marginTop: 8, padding: 8 }} direction="row" spacing={2}>
                 <FormControl style={{minWidth: 120}} error={!!state.tokenValidation}>
-                    <InputLabel id="demo-simple-select-label">Age</InputLabel>
+                    <InputLabel id="demo-simple-select-label">Token</InputLabel>
                     <Select
                         labelId="demo-simple-select-label"
                         id="demo-simple-select"
                         value={state.tokenId === undefined ? '' : state.tokenId}
-                        label="Age"
+                        label="Token"
                         onChange={(e) => handleTokenSelected(e)}
                     >
                         <MenuItem value={4}>EGG</MenuItem>

@@ -1,9 +1,9 @@
 import * as React from 'react';
-import useSessionStorage from './useSessionStorage';
+import useLocalStorage from './useLocalStorage';
 import { ethers } from 'ethers';
 
 const usePrivateKey = () => {
-    const [privateKey, setPrivateKey] = useSessionStorage("pk", null)
+    const [privateKey, setPrivateKey] = useLocalStorage("pk", null)
 
     React.useMemo(() => {
         if (privateKey !== null) {
